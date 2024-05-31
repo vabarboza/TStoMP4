@@ -50,35 +50,23 @@ namespace TStoMP4
                 // Carrega o arquivo de entrada
                 var mediaInfo = await FFmpeg.GetMediaInfo(inputPath);
 
-                // Seleciona o primeiro fluxo de vídeo
-                var videoStream = mediaInfo.VideoStreams.FirstOrDefault()?.SetCodec(VideoCodec.h264); // <-- Altere aqui o coodec para o desejado
-                var audioStream = mediaInfo.AudioStreams.FirstOrDefault();
+                // Seleciona o primeiro fluxo de vídeo e define o codec NVIDIA H.264
+                var videoStream = mediaInfo.VideoStreams.First()
+                    .SetCodec(VideoCodec.h264_nvenc);
+
+                // Seleciona o primeiro fluxo de áudio e define o codec AAC
+                var audioStream = mediaInfo.AudioStreams.First()
+                    .SetCodec(AudioCodec.aac);
 
                 // Cria um conversor
-                var conversion = FFmpeg.Conversions.New();
-
-                // Adiciona os fluxos de entrada
-                if (videoStream != null)
-                {
-                    conversion.AddStream(videoStream);
-                }
-
-                if (audioStream != null)
-                {
-                    conversion.AddStream(audioStream);
-                }
-
-                // Define o formato de saída (MP4)
-                conversion.SetOutput(outputPath);
+                var conversion = FFmpeg.Conversions.New()
+                    .AddStream(videoStream)
+                    .AddStream(audioStream)
+                    .SetOutput(outputPath)
+                    .SetOverwriteOutput(true);
 
                 // Define a opção para forçar a substituição do arquivo de saída se já existir
-                conversion.SetOverwriteOutput(true);
-
-                // Define preset ultrafast para aumentar a velocidade de conversão
-                conversion.SetPreset(ConversionPreset.Faster); // <-- Altere aqui a velocidade de conversão, velocidades mais altes geram arquivos maiores
-
-                // Define a opção para monitorar o progresso
-                conversion.OnProgress += (sender, args) => Console.WriteLine($"Progresso {inputPath}: {args.Percent}%");
+                conversion.OnProgress += (sender, args) => Console.WriteLine($"Progresso: {args.Percent}%");
 
                 // Executa a conversão
                 await conversion.Start();
